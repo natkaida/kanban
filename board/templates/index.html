@@ -1,0 +1,328 @@
+{% extends "base.html" %}
+
+{% block title %}
+Канбан-доска на Django, DRF & Alpine.js
+{% endblock %}
+
+{% block content %}
+
+<body class="antialiased sans-serif bg-gray-300">
+  <div x-data="board()" x-init="getData()" x-cloak class="flex flex-col min-h-screen border-t-8" :class="`border-${colorSelected.value}-700`">
+    <div class="flex-1">
+
+      <!-- Хедер -->
+      <div class="bg-cover bg-center bg-no-repeat" :class="`bg-${colorSelected.value}-900`" :style="`background-image: url(${bannerImage})`">
+        <div class="container mx-auto px-4 pt-4 md:pt-10 pb-40"></div>
+      </div>
+      <!-- конец хедера -->
+
+      <div class="container mx-auto px-4 py-4 -mt-40">
+
+{% include 'settings.html' %}
+
+        <!-- Главная -->
+        <div x-show.immediate="showSettingsPage == false">
+          <div x-show.transition="showSettingsPage == false">
+            <!-- Приветствие -->
+            <div class="flex justify-between items-center mb-2">
+              <div>
+                <h1 class="text-xl md:text-2xl text-gray-300 font-semibold">
+
+                  {% now "H" as current_time %}
+                  {% if current_time|add:"0" < 12 %}
+                   Доброе утро, {{ request.user.username }}
+                  {% elif current_time|add:"0" > 17 %}
+                   Добрый вечер, {{ request.user.username }}    
+                  {% else %}
+                   Добрый день, {{ request.user.username }}
+                  {% endif %}
+                </h1>
+                <div class="text-sm" :class="`text-${colorSelected.value}-400`">{% now 'SHORT_DATE_FORMAT' %}</div>
+              </div>
+              <div>
+                
+                <a @click.prevent="showSettingsPage = !showSettingsPage" href="#" class="rounded-lg px-3 py-2 font-medium inline-flex" :class="`text-${colorSelected.value}-500 bg-${colorSelected.value}-800 hover:bg-${colorSelected.value}-700`">
+                  <i class="uil uil-setting text-left mr-1"></i> Настройки</a>
+                <a href="/logout" class="rounded-lg px-3 py-2 font-medium inline-flex items-center" :class="`text-${colorSelected.value}-500 bg-${colorSelected.value}-800 hover:bg-${colorSelected.value}-700`">
+                  <i class="uil uil-sign-out-alt mr-1"></i>Выход</a>  
+              </div>
+            </div>
+            <!-- Конец блока Приветствие -->
+
+            <!-- Канбан-доска -->
+            <div class="py-4 md:py-8">
+            <form id="task-form">
+              {% csrf_token %}
+            </form>
+              <div class="flex -mx-4 block overflow-x-auto pb-2">
+                <template x-for="board in boards" :key="board">
+                  <div class="w-1/2 md:w-1/4 px-4 flex-shrink-0">
+                    <div class="bg-gray-100 pb-4 rounded-lg shadow overflow-y-auto overflow-x-hidden border-t-8" style="min-height: 100px" :class="{
+                        'border-red-500': board === boards[0],
+                        'border-yellow-500': board === boards[1],
+                        'border-blue-500': board === boards[2],
+                        'border-green-500': board === boards[3],
+                      }">
+                      <div class="flex justify-between items-center px-4 py-2 bg-gray-100 sticky top-0">
+                        <h2 x-text="board" class="font-medium text-gray-800"></h2>
+                        <a @click.prevent="showModal(board)" href="#" class="inline-flex items-center text-sm font-medium" :class="`text-${colorSelected.value}-500 hover:text-${colorSelected.value}-600`">
+                        <i class="uil uil-book-medical mr-1"></i>Добавить
+                        </a>
+                      </div>
+
+                      <div class="px-4">
+                        <div @dragover="onDragOver(event)" @drop="onDrop(event, board)" @dragenter="onDragEnter(event)" @dragleave="onDragLeave(event)" class="pt-2 pb-20 rounded-lg">
+                          <template x-for="(t, taskIndex) in tasks.filter(t => t.boardName === board)" :key="taskIndex">
+                            <div :id="t.uuid">
+                              <div x-show="t.edit == false">
+                                <div x-show="t.edit == false" class="bg-white rounded-lg shadow mb-3 p-2" draggable="true" @dragstart="onDragStart(event, t.uuid)" @dblclick="t.edit = true; setTimeout(() => $refs[t.uuid].focus())">
+                                  <div x-text="t.name" class="text-gray-800"></div>
+                                  <div x-text="t.date" class="text-gray-500 text-xs mt-2"></div>
+                                  <div class="text-right">
+                                  <button type="button" class="font-semibold text-red-500 focus:outline-none hover:text-red-700 shadow-sm" @click="removeTask(t.uuid)">
+                                <i class="uil uil-times-circle"></i></button></div>
+                                </div>
+                              </div>
+
+                              <div x-show="t.edit == true" class="bg-white rounded-lg p-4 shadow mb-4">
+                                <div class="mb-4">
+                                  <label class="text-gray-800 block mb-1 font-bold text-sm">Задача</label>
+                                  <input :x-ref="t.uuid" class="bg-gray-200 appearance-none border-2 border-gray-200 rounded-lg w-full py-2 px-2 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-blue-500" type="text" x-model="t.name" @keydown.enter="updateTask(t)">
+                                </div>
+                                <div class="text-right">
+                                  <button type="button" class="bg-white hover:bg-gray-100 focus:outline-none text-gray-700 font-semibold py-1 px-2 text-xs border border-gray-300 rounded-lg shadow-sm mr-2" @click="t.edit = false">
+                                    Отмена
+                                  </button>
+                                  <button type="button" class="text-white font-semibold focus:outline-none py-1 px-2 text-sm border border-transparent rounded-lg shadow-xs" @click="updateTask(t.uuid, t.name)" :class="`bg-${colorSelected.value}-700 hover:bg-${colorSelected.value}-800`">
+                                    Изменить
+                                  </button>
+                                </div>
+                              </div>
+
+                            </div>
+
+                          </template>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+                </template>
+              </div>
+            </div>
+            <!-- конец Канбан-доски -->
+          </div>
+        </div>
+        <!-- конец Главной -->
+
+      </div>
+    </div>
+
+    <!-- Футер -->
+    <div class="container mx-auto px-4 py-10">
+      <p class="text-gray-600 text-center"><strong><i class="uil uil-edit mr-1"></i>Kanban</strong> работает на <a href="https://www.django-rest-framework.org/" :class="`text-${colorSelected.value}-500 hover:text-${colorSelected.value}-600`">Django REST Framework</a> и <a href="https://alpinejs.dev/" :class="`text-${colorSelected.value}-500 hover:text-${colorSelected.value}-600`">AlpineJS</a>.</p>
+    </div>
+    <!-- конец футера -->
+
+    <!-- Добавление задачи -->
+    <div class="fixed inset-0 flex h-screen w-full items-end md:items-center justify-center z-10" x-show.transition.opacity="openModal">
+      <div class="absolute inset-0 bg-black opacity-50"></div>
+
+      <div class="md:p-4 md:max-w-lg mx-auto w-full flex-1 relative overflow-hidden">
+        <div class="md:shadow absolute right-0 top-0 w-10 h-10 rounded-full bg-white text-gray-500 hover:text-gray-800 inline-flex items-center justify-center cursor-pointer" x-on:click="openModal = !openModal">
+          <i class="uil uil-times"></i>
+        </div>
+
+        <div class="w-full rounded-t-lg md:rounded-lg bg-white p-8">
+          <h2 class="font-bold text-2xl mb-6 text-gray-800">Новая задача для <span class="leading-normal border-b-2" :class="`text-${colorSelected.value}-600 border-${colorSelected.value}-200`" x-text="task.boardName"></span></h2>
+
+          <div class="mb-4">
+            <label class="text-gray-800 block mb-1 font-bold text-sm">Описание задачи</label>
+            <input class="bg-gray-200 appearance-none border-2 border-gray-200 rounded-lg w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-blue-500" type="text" x-model="task.name" x-ref="taskName" autofocus @keydown.enter="addTask()">
+          </div>
+
+          <div class="mt-8 text-right">
+            <button type="button" class="bg-white hover:bg-gray-100 text-gray-700 font-semibold focus:outline-none py-2 px-4 border border-gray-300 rounded-lg shadow-sm mr-2" @click="openModal = !openModal">
+              Отмена
+            </button>
+            <button type="button" class="text-white font-semibold py-2 px-4 border border-transparent focus:outline-none rounded-lg shadow-sm" @click="addTask(task.name, task.boardName)" :class="`bg-${colorSelected.value}-700 hover:bg-${colorSelected.value}-800`">
+              Сохранить
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- конец формы -->
+  </div>
+
+<script>
+const csrftoken = document.querySelector('#task-form > input').value;
+
+const addTask = async (name, board) => {
+    try {
+    const res = await axios.post('/api/tasks/',
+        { name, boardName: board },
+        { headers: { 'X-CSRFToken': csrftoken }}
+        );
+    location.reload();
+      } catch (e) {
+        console.error(e);
+      }
+    
+};
+
+const removeTask = async taskUuid => {
+    try {
+    const res = await axios.delete('/api/task/' + taskUuid,
+        { headers: { 'X-CSRFToken': csrftoken }}
+        );
+    location.reload();
+      } catch (e) {
+        console.error(e);
+      }
+};
+
+const updateTask = async (taskUuid, taskName) => {
+    try {
+    const res = await axios.patch('/api/task/' + taskUuid,
+        { uuid: taskUuid, name: taskName},
+        { headers: { 'X-CSRFToken': csrftoken }}
+        );
+    location.reload();
+      } catch (e) {
+        console.error(e);
+      }
+};
+
+function board() {
+      return {
+        showSettingsPage: false,
+        openModal: false,
+        bannerImage: '',
+        colors: [{
+            label: '#3182ce',
+            value: 'blue'
+          },
+          {
+            label: '#38a169',
+            value: 'green'
+          },
+          {
+            label: '#967bb6',
+            value: 'purple'
+          },
+          {
+            label: '#e53e3e',
+            value: 'red'
+          },
+          {
+            label: '#ffa500',
+            value: 'orange'
+          },
+          {
+            label: '#0B0B45',
+            value: 'indigo'
+          },
+          {
+            label: '#008080',
+            value: 'teal'
+          },
+          {
+            label: '#718096',
+            value: 'gray'
+          },
+          {
+            label: '#ffff00',
+            value: 'yellow'
+          }
+        ],
+        colorSelected: {
+          label: '#3182ce',
+          value: 'blue'
+        },
+
+        boards: [
+          'Сделать',
+          'В процессе',
+          'На проверке',
+          'Выполнено'
+        ],
+        task: {
+          name: '',
+          boardName: '',
+          date: new Date()
+        },   
+        
+        tasks: [],
+        showModal(board) {
+          this.task.boardName = board;
+          this.openModal = true;
+          setTimeout(() => this.$refs.taskName.focus(), 200);
+        },
+
+        getData() {
+          const themeFromLocalStorage = JSON.parse(localStorage.getItem('KB-theme'));
+          this.bannerImage = localStorage.getItem('KB-bannerImage') || '';
+          this.colorSelected = themeFromLocalStorage || {
+            label: '#3182ce',
+            value: 'blue'
+          };
+           const tasksFromDjango = {{ tasks | safe }};
+           this.tasks = tasksFromDjango.map(t => {
+              return {
+                uuid: t.uuid,
+                name: t.name,
+                boardName: t.boardName,
+                date: t.date,
+                edit: false
+              }
+            });
+        },
+        saveSettings() {
+          const theme = JSON.stringify(this.colorSelected);
+          localStorage.setItem('KB-theme', theme);
+          localStorage.setItem('KB-bannerImage', this.bannerImage);
+          this.showSettingsPage = false;
+        },
+        onDragStart(event, uuid) {
+          event.dataTransfer.setData('text/plain', uuid);
+          event.target.classList.add('opacity-5');
+        },
+        onDragOver(event) {
+          event.preventDefault();
+          return false;
+        },
+        onDragEnter(event) {
+          event.target.classList.add('bg-gray-200');
+        },
+        onDragLeave(event) {
+          event.target.classList.remove('bg-gray-200');
+        },
+        onDrop(event, boardName) {
+          event.stopPropagation(); 
+          event.preventDefault();
+          event.target.classList.remove('bg-gray-200');
+          const id = event.dataTransfer.getData('text');
+          const draggableElement = document.getElementById(id);
+          const dropzone = event.target;
+          dropzone.appendChild(draggableElement);
+          axios.patch('/api/task/' + id,
+        { boardName: boardName},
+        { headers: { 'X-CSRFToken': csrftoken }}
+        );
+          event.dataTransfer.clearData();
+        },
+        saveDataToLocalStorage(data, keyName) {
+          var a = [];
+          a = JSON.parse(localStorage.getItem(keyName)) || [];
+          a.push(data);
+          localStorage.setItem(keyName, JSON.stringify(a));
+        },
+       }
+     }
+
+</script>
+
+</body>
+ {% endblock %}
+

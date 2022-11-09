@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}   
+  
+{% block content %} 
+{% include 'messages.html' %}
+<!--Форма регистрации--> 
+
+<div class="flex items-center justify-center min-h-screen bg-gray-300">
+   <div class="px-8 py-6 mt-4 mb-4 text-left bg-white shadow-lg rounded-lg">
+   	<h1 class="text-3xl font-bold text-blue-700 text-center"><i class="uil uil-edit mr-2"></i>Kanban</h1>
+      <h3 class="text-2xl font-bold text-gray-700 text-center">Регистрация</h3>
+        <div class="mt-4 px-4 py-4 text-gray-700">
+		<form method="POST">
+		{% csrf_token %}
+		{{ register_form|crispy }}                    
+		<button id="button" type="submit" class="bg-blue-700 hover:bg-blue-500 text-white font-semibold text-sm rounded-lg px-3 py-2 focus:outline-none"><i class="uil uil-user-plus mr-1"></i>Создать аккаунт</button>
+    	</form>
+	  <p class="text-center text-gray-700 font-bold">Если у вас уже есть аккаунт, <a href="/login" class="bg-blue-700 hover:bg-blue-500 rounded-lg text-sm font-semibold text-white px-3 py-2 inline-flex">войдите</a> на сайт.</p>
+   </div>
+  </div>
+ </div>
+
+{% endblock %}
+

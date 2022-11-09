@@ -1,0 +1,35 @@
+ {% if messages %}
+    {% for message in messages%}
+    {% if message.tags == 'error' %}
+    <div class="absolute m-auto left-0 right-0">
+    <div class="flex mt-5 mx-5 text-sm text-red-600 bg-red-200 border border-red-400 h-12 items-center p-4 rounded-md relative" role="alert">
+        <span class="mr-1">
+            <i class="uil uil-bell"></i>
+          </span>
+        <span>
+            <strong class="mr-1">{{message}}</strong>
+        </span>
+          <button type="button" data-dismiss="alert" aria-label="Close" onclick="this.parentElement.remove();">
+              <span class="absolute top-0 bottom-0 right-0 text-2xl px-3 py-1 hover:text-red-900" aria-hidden="true" >×</span>
+          </button>
+        </div>
+      </div>
+    {% endif %}
+    {% if message.tags == 'success' %}
+    <div class="absolute m-auto left-0 right-0">
+    <div class="flex mt-5 mx-5 text-sm text-teal-600 bg-teal-200 border border-teal-400 h-12 items-center p-4 rounded-md relative" role="alert">
+          <span class="mr-1">
+            <i class="uil uil-thumbs-up"></i>
+          </span>
+        <span>
+            <strong class="mr-1">{{message}}</strong>
+        </span>
+          <button type="button" data-dismiss="alert" aria-label="Close" onclick="this.parentElement.remove();">
+              <span class="absolute top-0 bottom-0 right-0 text-2xl px-3 py-1 hover:text-red-900" aria-hidden="true" >×</span>
+          </button>
+        </div>
+      </div>
+     
+    {% endif %}
+    {% endfor %}
+    {% endif %}
