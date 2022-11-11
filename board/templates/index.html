@@ -304,7 +304,7 @@ function board() {
           event.target.classList.remove('bg-gray-200');
           const id = event.dataTransfer.getData('text');
           const draggableElement = document.getElementById(id);
-          const dropzone = event.target;
+          const dropzone = event.currentTarget;
           dropzone.appendChild(draggableElement);
           axios.patch('/api/task/' + id,
         { boardName: boardName},
