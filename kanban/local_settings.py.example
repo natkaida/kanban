@@ -1,0 +1,3 @@
+DEBUG = False
+ALLOWED_HOSTS = ['natkaida.pythonanywhere.com']
+SECRET_KEY = 'PRODUCTION SECRET KEY'

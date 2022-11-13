@@ -1,0 +1,13 @@
+[flake8]
+exclude =
+    .git,
+    __pycache__,
+    manage.py,
+    wsgi.py,
+    settings.py,
+    local_settings.py,
+    */migrations/*,
+    apps.py
+    venv/
+max-complexity = 10
+inline-quotes = '

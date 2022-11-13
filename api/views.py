@@ -1,9 +1,10 @@
-from rest_framework.decorators import api_view
-from board.models import Task
 from api.serializers import TaskSerializer
-from rest_framework.authentication import SessionAuthentication, BasicAuthentication
-from rest_framework.permissions import IsAuthenticated
+
+from board.models import Task
+
 from rest_framework import generics
+from rest_framework.authentication import SessionAuthentication
+from rest_framework.permissions import IsAuthenticated
 
 
 class ListTask(generics.ListCreateAPIView):
