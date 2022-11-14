@@ -32,7 +32,7 @@
                   {% if current_time|add:"0" < 12 %}
                    Доброе утро, {{ request.user.username }}
                   {% elif current_time|add:"0" > 17 %}
-                   Добрый вечер, {{ request.user.username }}    
+                   Добрый вечер, {{ request.user.username }}
                   {% else %}
                    Добрый день, {{ request.user.username }}
                   {% endif %}
@@ -40,11 +40,11 @@
                 <div class="text-sm" :class="`text-${colorSelected.value}-400`">{% now 'SHORT_DATE_FORMAT' %}</div>
               </div>
               <div>
-                
+
                 <a @click.prevent="showSettingsPage = !showSettingsPage" href="#" class="rounded-lg px-3 py-2 font-medium inline-flex" :class="`text-${colorSelected.value}-500 bg-${colorSelected.value}-800 hover:bg-${colorSelected.value}-700`">
                   <i class="uil uil-setting text-left mr-1"></i> Настройки</a>
                 <a href="/logout" class="rounded-lg px-3 py-2 font-medium inline-flex items-center" :class="`text-${colorSelected.value}-500 bg-${colorSelected.value}-800 hover:bg-${colorSelected.value}-700`">
-                  <i class="uil uil-sign-out-alt mr-1"></i>Выход</a>  
+                  <i class="uil uil-sign-out-alt mr-1"></i>Выход</a>
               </div>
             </div>
             <!-- Конец блока Приветствие -->
@@ -157,41 +157,39 @@
 
 <script>
 const csrftoken = document.querySelector('#task-form > input').value;
+const api_client = axios.create({
+    baseURL: '/api',
+    headers: { 'X-CSRFToken': csrftoken },
+});
 
 const addTask = async (name, board) => {
     try {
-    const res = await axios.post('/api/tasks/',
-        { name, boardName: board },
-        { headers: { 'X-CSRFToken': csrftoken }}
-        );
-    location.reload();
-      } catch (e) {
+        const res = await api_client.post('/tasks/', {name, boardName: board});
+        location.reload();
+    } catch (e) {
         console.error(e);
-      }
-    
+    }
+
 };
 
 const removeTask = async taskUuid => {
     try {
-    const res = await axios.delete('/api/task/' + taskUuid,
-        { headers: { 'X-CSRFToken': csrftoken }}
-        );
-    location.reload();
-      } catch (e) {
+        const res = await api_client.delete(`/task/${taskUuid}`);
+        location.reload();
+    } catch (e) {
         console.error(e);
-      }
+    }
 };
 
 const updateTask = async (taskUuid, taskName) => {
     try {
-    const res = await axios.patch('/api/task/' + taskUuid,
-        { uuid: taskUuid, name: taskName},
-        { headers: { 'X-CSRFToken': csrftoken }}
+        const res = await api_client.patch(`/task/${taskUuid}`,
+            {uuid: taskUuid, name: taskName}
         );
-    location.reload();
-      } catch (e) {
+        location.reload();
+    } catch (e) {
         console.error(e);
-      }
+    }
 };
 
 function board() {
@@ -251,8 +249,8 @@ function board() {
           name: '',
           boardName: '',
           date: new Date()
-        },   
-        
+        },
+
         tasks: [],
         showModal(board) {
           this.task.boardName = board;
@@ -299,17 +297,14 @@ function board() {
           event.target.classList.remove('bg-gray-200');
         },
         onDrop(event, boardName) {
-          event.stopPropagation(); 
+          event.stopPropagation();
           event.preventDefault();
           event.target.classList.remove('bg-gray-200');
           const id = event.dataTransfer.getData('text');
           const draggableElement = document.getElementById(id);
           const dropzone = event.currentTarget;
           dropzone.appendChild(draggableElement);
-          axios.patch('/api/task/' + id,
-        { boardName: boardName},
-        { headers: { 'X-CSRFToken': csrftoken }}
-        );
+          api_client.patch(`/task/${id}`, { boardName: boardName});
           event.dataTransfer.clearData();
         },
         saveDataToLocalStorage(data, keyName) {
